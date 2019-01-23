@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
@@ -7,7 +6,7 @@ plugins {
 	id("ru.capjack.capjack-bintray") version "0.14.1"
 }
 
-group = "ru.capjack.ktjvm.utils"
+group = "ru.capjack.ktjvm.app"
 
 repositories {
 	jcenter()
