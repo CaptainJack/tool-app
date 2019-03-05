@@ -1,8 +1,8 @@
-package ru.capjack.ktjvm.app
+package ru.capjack.tool.ktjvm.app
 
-import ru.capjack.kt.inject.Binder
-import ru.capjack.kt.inject.Injection
-import ru.capjack.kt.utils.Stoppable
+import ru.capjack.tool.kt.inject.Binder
+import ru.capjack.tool.kt.inject.Injection
+import ru.capjack.tool.kt.utils.Stoppable
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths

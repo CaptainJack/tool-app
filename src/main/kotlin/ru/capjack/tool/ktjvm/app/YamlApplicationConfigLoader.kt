@@ -1,4 +1,4 @@
-package ru.capjack.ktjvm.app
+package ru.capjack.tool.ktjvm.app
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory

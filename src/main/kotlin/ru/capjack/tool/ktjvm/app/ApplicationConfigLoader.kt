@@ -1,4 +1,4 @@
-package ru.capjack.ktjvm.app
+package ru.capjack.tool.ktjvm.app
 
 import java.nio.file.Path
 import kotlin.reflect.KClass
