@@ -1,6 +1,6 @@
-package ru.capjack.tool.ktjvm.app
+package ru.capjack.tool.app
 
-import ru.capjack.tool.kt.utils.Stoppable
+import ru.capjack.tool.utils.Stoppable
 
 interface Application : Stoppable {
 	val running: Boolean

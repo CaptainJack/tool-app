@@ -1,6 +1,6 @@
-package ru.capjack.tool.ktjvm.app
+package ru.capjack.tool.app
 
-import ru.capjack.tool.kt.inject.Binder
+import ru.capjack.tool.depin.Binder
 import kotlin.reflect.KClass
 
 interface ApplicationBootstrap {
