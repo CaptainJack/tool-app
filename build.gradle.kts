@@ -23,12 +23,17 @@ dependencies {
 	api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.+")
 	api("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+")
 	
+	api("ru.capjack.tool:tool-lang-jvm:0.3.1")
+	api("ru.capjack.tool:tool-utils-jvm:0.2.1")
 	api("ru.capjack.tool:tool-logging-jvm:0.13.0")
 	api("ru.capjack.tool:tool-depin-jvm:0.4.1")
-	api("ru.capjack.tool:tool-lang-jvm:0.3.0")
-	api("ru.capjack.tool:tool-utils-jvm:0.2.0")
 }
 
 tasks.withType<KotlinJvmCompile> {
 	kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.create<Jar>("sourcesJar") {
+	archiveClassifier.set("sources")
+	from(sourceSets["main"].allSource)
 }
