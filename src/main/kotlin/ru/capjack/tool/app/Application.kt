@@ -2,14 +2,15 @@ package ru.capjack.tool.app
 
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
+import ch.qos.logback.classic.util.ContextInitializer.CONFIG_FILE_PROPERTY
+import ch.qos.logback.core.util.OptionHelper
 import org.slf4j.LoggerFactory
 import ru.capjack.tool.depin.Binder
 import ru.capjack.tool.depin.Injection
 import ru.capjack.tool.depin.registerSmartProducerForAnnotatedClass
 import ru.capjack.tool.depin.registerSmartProducerForAnnotatedParameter
-import ru.capjack.tool.logging.debug
+import ru.capjack.tool.logging.info
 import ru.capjack.tool.logging.ownLogger
-import ru.capjack.tool.reflect.kClass
 import ru.capjack.tool.utils.Stoppable
 import java.io.File
 import java.nio.file.Files
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.jvm.jvmName
 
 class Application(
@@ -37,12 +39,14 @@ class Application(
 	
 	private val logger = ownLogger
 	private val running = AtomicBoolean(true)
-	private val moduleStoppers: Deque<ModuleStopper> = LinkedList()
+	private val moduleStoppers: Deque<Pair<String, Stoppable>> = LinkedList()
 	
 	init {
-		JoranConfigurator().apply {
-			context = (LoggerFactory.getILoggerFactory() as LoggerContext).also(LoggerContext::reset)
-			doConfigure(resolveConfigPath("logback.xml").toFile())
+		if (OptionHelper.getSystemProperty(CONFIG_FILE_PROPERTY) == null) {
+			JoranConfigurator().apply {
+				context = (LoggerFactory.getILoggerFactory() as LoggerContext).also(LoggerContext::reset)
+				doConfigure(resolveConfigPath("logback.xml").toFile())
+			}
 		}
 		
 		try {
@@ -51,24 +55,21 @@ class Application(
 			Runtime.getRuntime().addShutdownHook(Thread(::stop, "ApplicationShutdown"))
 			
 			val injector = Injection()
+				.configure {
+					registerSmartProducerForAnnotatedClass(::factoryConfig)
+					registerSmartProducerForAnnotatedParameter(::factoryPath)
+				}
 				.apply {
-					configure {
-						registerSmartProducerForAnnotatedClass(::factoryConfig)
-						registerSmartProducerForAnnotatedParameter(::factoryPath)
-					}
-					
-					injections.forEach {
-						configure(it)
-					}
+					injections.forEach { configure(it) }
 				}
 				.build()
 			
 			modules.forEach {
 				val name = it.qualifiedName ?: it.jvmName
-				logger.debug { "Start module $name" }
+				logger.info { "Start module $name" }
 				val module = injector.get(it)
 				if (module is Stoppable) {
-					moduleStoppers.addFirst(ModuleStopper(name, module))
+					moduleStoppers.addFirst(name to module)
 				}
 			}
 			
@@ -85,12 +86,12 @@ class Application(
 			logger.info("Stopping...")
 			
 			for (stopper in moduleStoppers) {
-				logger.debug { "Stop module ${stopper.name}" }
+				logger.info { "Stop module ${stopper.first}" }
 				try {
-					stopper.stopper.stop()
+					stopper.second.stop()
 				}
 				catch (e: Throwable) {
-					logger.warn("Stop module ${stopper.name} fails", e)
+					logger.warn("Stop module ${stopper.first} fails", e)
 				}
 			}
 			
@@ -133,7 +134,7 @@ class Application(
 		parameter: KParameter
 	): Any {
 		val path = resolvePath(annotation.value)
-		val type = parameter.type.kClass
+		val type = parameter.type.jvmErasure
 		
 		return when {
 			type.isSubclassOf(Path::class)   -> path
@@ -142,7 +143,4 @@ class Application(
 			else                             -> throw IllegalArgumentException("ApplicationPath type '$type' not supported")
 		}
 	}
-	
-	private class ModuleStopper(val name: String, val stopper: Stoppable)
-	
 }

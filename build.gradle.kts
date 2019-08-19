@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
-	kotlin("jvm") version "1.3.21"
-	id("nebula.release") version "10.1.1"
-	id("ru.capjack.bintray") version "0.17.0"
+	kotlin("jvm") version "1.3.41"
+	id("nebula.release") version "11.1.0"
+	id("ru.capjack.bintray") version "0.20.1"
 }
 
 group = "ru.capjack.tool"
@@ -11,29 +11,23 @@ group = "ru.capjack.tool"
 repositories {
 	jcenter()
 	maven("https://dl.bintray.com/capjack/public")
+	mavenLocal()
+}
+
+kotlin {
+	target {
+		compilations.all { kotlinOptions.jvmTarget = "1.8" }
+	}
 }
 
 dependencies {
 	implementation(kotlin("stdlib-jdk8"))
 	implementation(kotlin("reflect"))
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.9")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.9")
+	implementation("ru.capjack.tool:tool-logging:0.14.5")
+	implementation("ch.qos.logback:logback-classic:1.2.3")
 	
-	implementation("ch.qos.logback:logback-classic:1.2.+")
-	implementation("ru.capjack.tool:tool-reflect-jvm:0.11.0")
-	
-	api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.+")
-	api("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+")
-	
-	api("ru.capjack.tool:tool-lang-jvm:0.3.1")
-	api("ru.capjack.tool:tool-utils-jvm:0.2.1")
-	api("ru.capjack.tool:tool-logging-jvm:0.13.0")
-	api("ru.capjack.tool:tool-depin-jvm:0.4.1")
-}
-
-tasks.withType<KotlinJvmCompile> {
-	kotlinOptions.jvmTarget = "1.8"
-}
-
-tasks.create<Jar>("sourcesJar") {
-	archiveClassifier.set("sources")
-	from(sourceSets["main"].allSource)
+	api("ru.capjack.tool:tool-utils:0.3.0")
+	api("ru.capjack.tool:tool-depin:0.5.0")
 }
