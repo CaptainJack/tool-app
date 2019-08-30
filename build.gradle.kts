@@ -1,9 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
-
 plugins {
-	kotlin("jvm") version "1.3.41"
+	kotlin("jvm") version "1.3.50"
 	id("nebula.release") version "11.1.0"
-	id("ru.capjack.bintray") version "0.20.1"
+	id("ru.capjack.bintray") version "1.0.0"
 }
 
 group = "ru.capjack.tool"
@@ -28,6 +26,6 @@ dependencies {
 	implementation("ru.capjack.tool:tool-logging:0.14.5")
 	implementation("ch.qos.logback:logback-classic:1.2.3")
 	
-	api("ru.capjack.tool:tool-utils:0.3.0")
-	api("ru.capjack.tool:tool-depin:0.5.0")
+	api("ru.capjack.tool:tool-utils:0.4.0-snapshot.20190830075507340+88ef458")
+	api("ru.capjack.tool:tool-depin:0.6.0-snapshot.20190830141201929+725799c")
 }

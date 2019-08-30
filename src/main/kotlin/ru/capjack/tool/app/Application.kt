@@ -7,8 +7,8 @@ import ch.qos.logback.core.util.OptionHelper
 import org.slf4j.LoggerFactory
 import ru.capjack.tool.depin.Binder
 import ru.capjack.tool.depin.Injection
-import ru.capjack.tool.depin.registerSmartProducerForAnnotatedClass
-import ru.capjack.tool.depin.registerSmartProducerForAnnotatedParameter
+import ru.capjack.tool.depin.addSmartProducerForAnnotatedClass
+import ru.capjack.tool.depin.addSmartProducerForAnnotatedParameter
 import ru.capjack.tool.logging.info
 import ru.capjack.tool.logging.ownLogger
 import ru.capjack.tool.utils.Stoppable
@@ -21,7 +21,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.jvm.jvmErasure
-import kotlin.reflect.jvm.jvmName
 
 class Application(
 	modules: List<KClass<*>>,
@@ -54,10 +53,20 @@ class Application(
 			
 			Runtime.getRuntime().addShutdownHook(Thread(::stop, "ApplicationShutdown"))
 			
+			val currentProducingModule = object {
+				var clazz: KClass<*>? = null
+			}
+			
 			val injector = Injection()
 				.configure {
-					registerSmartProducerForAnnotatedClass(::factoryConfig)
-					registerSmartProducerForAnnotatedParameter(::factoryPath)
+					addSmartProducerForAnnotatedClass(::factoryConfig)
+					addSmartProducerForAnnotatedParameter(::factoryPath)
+					addProduceObserverBefore { actual ->
+						val expect = currentProducingModule.clazz
+						if (expect != null && modules.any { it == actual } && expect != actual) {
+							throw RuntimeException("Broken startup sequence of modules, it is expected ${expect.qualifiedName!!} but ${actual.qualifiedName!!} creates")
+						}
+					}
 				}
 				.apply {
 					injections.forEach { configure(it) }
@@ -65,13 +74,15 @@ class Application(
 				.build()
 			
 			modules.forEach {
-				val name = it.qualifiedName ?: it.jvmName
+				val name = it.qualifiedName!!
 				logger.info { "Start module $name" }
+				currentProducingModule.clazz = it
 				val module = injector.get(it)
 				if (module is Stoppable) {
 					moduleStoppers.addFirst(name to module)
 				}
 			}
+			currentProducingModule.clazz = null
 			
 			logger.info("Started")
 		}
