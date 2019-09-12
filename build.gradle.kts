@@ -26,6 +26,6 @@ dependencies {
 	implementation("ru.capjack.tool:tool-logging:0.14.5")
 	implementation("ch.qos.logback:logback-classic:1.2.3")
 	
-	api("ru.capjack.tool:tool-utils:0.4.0-snapshot.20190830075507340+88ef458")
-	api("ru.capjack.tool:tool-depin:0.6.0-snapshot.20190830141201929+725799c")
+	api("ru.capjack.tool:tool-utils:0.4.0")
+	api("ru.capjack.tool:tool-depin:0.6.0")
 }
