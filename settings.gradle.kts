@@ -1,3 +1,1 @@
-rootProject.name = "tool-app-jvm"
-
-enableFeaturePreview("GRADLE_METADATA")
+rootProject.name = "tool-jvm-app"

@@ -1,10 +1,10 @@
 package ru.capjack.tool.app
 
-import java.nio.file.Path
+import java.io.File
 import kotlin.reflect.KClass
 
 interface ApplicationConfigLoader {
-	fun match(file: String): Boolean
+	fun match(file: File): Boolean
 	
-	fun <T : Any> load(file: Path, type: KClass<out T>): T
+	fun <T : Any> load(file: File, type: KClass<out T>): T
 }

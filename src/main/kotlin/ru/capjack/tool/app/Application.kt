@@ -15,6 +15,7 @@ import ru.capjack.tool.utils.Stoppable
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
@@ -23,18 +24,22 @@ import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.jvm.jvmErasure
 
 class Application(
-	modules: List<KClass<*>>,
-	injections: List<Binder.() -> Unit>,
-	private val configLoaders: List<ApplicationConfigLoader>,
 	private val dir: Path,
-	private val env: String?
+	private val configEnv: String?,
+	private val configLoaders: List<ApplicationConfigLoader>,
+	modules: List<KClass<*>>,
+	injections: List<Binder.() -> Unit>
 ) : Stoppable {
 	
-	companion object {
-		inline operator fun invoke(args: Array<String>, build: ApplicationBuilder.() -> Unit): Application {
-			return ApplicationBuilder(args).also(build).build()
-		}
-	}
+	internal constructor(configuration: ApplicationConfigurationImpl) : this(
+		Paths.get(configuration.dir),
+		configuration.configEnv,
+		configuration.configLoaders,
+		configuration.modules,
+		configuration.injections
+	)
+	
+	constructor(args: Array<String>, configuration: ApplicationConfiguration.() -> Unit) : this(ApplicationConfigurationImpl(args).apply(configuration))
 	
 	private val logger = ownLogger
 	private val running = AtomicBoolean(true)
@@ -42,16 +47,19 @@ class Application(
 	
 	init {
 		if (OptionHelper.getSystemProperty(CONFIG_FILE_PROPERTY) == null) {
-			JoranConfigurator().apply {
-				context = (LoggerFactory.getILoggerFactory() as LoggerContext).also(LoggerContext::reset)
-				doConfigure(resolveConfigPath("logback.xml").toFile())
+			val file = resolveConfigPath("logback.xml").toFile()
+			if (file.exists()) {
+				JoranConfigurator().apply {
+					context = (LoggerFactory.getILoggerFactory() as LoggerContext).also(LoggerContext::reset)
+					doConfigure(file)
+				}
 			}
 		}
 		
 		try {
 			logger.info("Starting...")
 			
-			Runtime.getRuntime().addShutdownHook(Thread(::stop, "ApplicationShutdown"))
+			Runtime.getRuntime().addShutdownHook(Thread(::stop, "ApplicationShutdownHook"))
 			
 			val currentProducingModule = object {
 				var clazz: KClass<*>? = null
@@ -59,8 +67,8 @@ class Application(
 			
 			val injector = Injection()
 				.configure {
-					addSmartProducerForAnnotatedClass(::factoryConfig)
-					addSmartProducerForAnnotatedParameter(::factoryPath)
+					addSmartProducerForAnnotatedClass(::provideApplicationConfig)
+					addSmartProducerForAnnotatedParameter(::provideApplicationPath)
 					addProduceObserverBefore { actual ->
 						val expect = currentProducingModule.clazz
 						if (expect != null && modules.any { it == actual } && expect != actual) {
@@ -115,35 +123,29 @@ class Application(
 	}
 	
 	private fun resolveConfigPath(path: String): Path {
-		if (env != null && path.contains('.')) {
-			val envPath = "${path.substringBeforeLast('.')}.$env.${path.substringAfterLast('.')}"
-			resolvePath("config/$envPath").takeIf { Files.exists(it) }?.also {
+		if (configEnv != null && path.contains('.')) {
+			val envPath = "${path.substringBeforeLast('.')}.$configEnv.${path.substringAfterLast('.')}"
+			resolvePath(envPath).takeIf { Files.exists(it) }?.also {
 				return it
 			}
 		}
-		return resolvePath("config/$path")
+		return resolvePath(path)
 	}
 	
-	private fun factoryConfig(
-		annotation: ApplicationConfig,
-		type: KClass<out Any>
-	): Any {
-		val file = annotation.file
+	private fun provideApplicationConfig(annotation: ApplicationConfig, type: KClass<out Any>): Any {
+		val file = resolveConfigPath(annotation.file).toFile()
+		
+		if (!file.exists()) {
+			throw IllegalArgumentException("ApplicationConfig file '$file' not exist")
+		}
 		
 		val loader = configLoaders.find { it.match(file) }
 			?: throw RuntimeException("ApplicationConfig loader for file '$file' not found")
 		
-		resolveConfigPath(file).takeIf { Files.exists(it) }?.let {
-			return loader.load(it, type)
-		}
-		
-		throw IllegalArgumentException("ApplicationConfig file '$file' not exist")
+		return loader.load(file, type)
 	}
 	
-	private fun factoryPath(
-		annotation: ApplicationPath,
-		parameter: KParameter
-	): Any {
+	private fun provideApplicationPath(annotation: ApplicationPath, parameter: KParameter): Any {
 		val path = resolvePath(annotation.value)
 		val type = parameter.type.jvmErasure
 		
