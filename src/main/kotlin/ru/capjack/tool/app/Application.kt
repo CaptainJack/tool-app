@@ -11,6 +11,7 @@ import ru.capjack.tool.depin.addSmartProducerForAnnotatedClass
 import ru.capjack.tool.depin.addSmartProducerForAnnotatedParameter
 import ru.capjack.tool.logging.info
 import ru.capjack.tool.logging.ownLogger
+import ru.capjack.tool.utils.MaybeStartable
 import ru.capjack.tool.utils.Stoppable
 import java.io.File
 import java.nio.file.Files
@@ -32,7 +33,7 @@ class Application(
 ) : Stoppable {
 	
 	internal constructor(configuration: ApplicationConfigurationImpl) : this(
-		Paths.get(configuration.dir),
+		Paths.get(configuration.dir).toAbsolutePath().normalize(),
 		configuration.configEnv,
 		configuration.configLoaders,
 		configuration.modules,
@@ -57,7 +58,7 @@ class Application(
 		}
 		
 		try {
-			logger.info("Starting...")
+			logger.info("Starting in '$dir'")
 			
 			Runtime.getRuntime().addShutdownHook(Thread(::stop, "ApplicationShutdownHook"))
 			
@@ -81,13 +82,26 @@ class Application(
 				}
 				.build()
 			
+			val prefix = Thread.currentThread().stackTrace
+				.asSequence()
+				.map { it.className }
+				.find { it != "java.lang.Thread" && !it.startsWith("ru.capjack.tool.app.") }
+				?.let { it.substring(0, it.lastIndexOf('.') + 1) }
+				?: ""
+			
 			modules.forEach {
-				val name = it.qualifiedName!!
+				val name = it.qualifiedName!!.removePrefix(prefix)
 				logger.info { "Start module $name" }
 				currentProducingModule.clazz = it
 				val module = injector.get(it)
 				if (module is Stoppable) {
 					moduleStoppers.addFirst(name to module)
+				}
+				else if (module is MaybeStartable) {
+					val stopper = module.start()
+					if (stopper != null) {
+						moduleStoppers.addFirst(name to stopper)
+					}
 				}
 			}
 			currentProducingModule.clazz = null
@@ -102,7 +116,7 @@ class Application(
 	
 	override fun stop() {
 		if (running.compareAndSet(true, false)) {
-			logger.info("Stopping...")
+			logger.info("Stopping")
 			
 			for (stopper in moduleStoppers) {
 				logger.info { "Stop module ${stopper.first}" }
@@ -125,22 +139,35 @@ class Application(
 	private fun resolveConfigPath(path: String): Path {
 		if (configEnv != null && path.contains('.')) {
 			val envPath = "${path.substringBeforeLast('.')}.$configEnv.${path.substringAfterLast('.')}"
-			resolvePath(envPath).takeIf { Files.exists(it) }?.also {
+			resolvePath("config/$envPath").takeIf { Files.exists(it) }?.also {
 				return it
 			}
 		}
-		return resolvePath(path)
+		return resolvePath("config/$path")
 	}
 	
 	private fun provideApplicationConfig(annotation: ApplicationConfig, type: KClass<out Any>): Any {
-		val file = resolveConfigPath(annotation.file).toFile()
+		var path = annotation.file
+		if (path.isEmpty()) {
+			path = type.simpleName!!
+				.replace("Config", "")
+				.decapitalize()
+				.replace(Regex("[A-Z]"), "-$0")
+				.toLowerCase()
+			path += ".yml"
+		}
+		
+		var file = resolveConfigPath(path).toFile()
 		
 		if (!file.exists()) {
-			throw IllegalArgumentException("ApplicationConfig file '$file' not exist")
+			file = resolveConfigPath(path.replace('-', '/')).toFile()
+			if (!file.exists()) {
+				throw IllegalArgumentException("ApplicationConfig file '$path' not found")
+			}
 		}
 		
 		val loader = configLoaders.find { it.match(file) }
-			?: throw RuntimeException("ApplicationConfig loader for file '$file' not found")
+			?: throw RuntimeException("ApplicationConfig loader for file '$path' not found")
 		
 		return loader.load(file, type)
 	}

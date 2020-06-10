@@ -1,11 +1,13 @@
 package ru.capjack.tool.app
 
-import org.yaml.snakeyaml.Yaml
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.File
 import kotlin.reflect.KClass
 
 class YamlApplicationConfigLoader : ApplicationConfigLoader {
-	private val yaml = Yaml()
+	private val yaml = ObjectMapper(YAMLFactory()).registerKotlinModule()
 	
 	override fun match(file: File): Boolean {
 		return when (file.extension.toLowerCase()) {
@@ -15,8 +17,6 @@ class YamlApplicationConfigLoader : ApplicationConfigLoader {
 	}
 	
 	override fun <T : Any> load(file: File, type: KClass<out T>): T {
-		return file.reader().use {
-			yaml.loadAs(it, type.java)
-		}
+		return yaml.readValue(file, type.java)
 	}
 }
