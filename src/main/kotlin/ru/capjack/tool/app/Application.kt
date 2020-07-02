@@ -46,7 +46,16 @@ class Application(
 	private val running = AtomicBoolean(true)
 	private val moduleStoppers: Deque<Pair<String, Stoppable>> = LinkedList()
 	
+	private val name: String = Thread.currentThread().stackTrace
+		.asSequence()
+		.map { it.className }
+		.find { it != "java.lang.Thread" && !it.startsWith("ru.capjack.tool.app.") }
+		?.let { it.substring(0, it.lastIndexOf('.') + 1) }
+		?: ""
+	
 	init {
+		
+		
 		if (OptionHelper.getSystemProperty(CONFIG_FILE_PROPERTY) == null) {
 			val file = resolveConfigPath("logback.xml").toFile()
 			if (file.exists()) {
@@ -82,25 +91,18 @@ class Application(
 				}
 				.build()
 			
-			val prefix = Thread.currentThread().stackTrace
-				.asSequence()
-				.map { it.className }
-				.find { it != "java.lang.Thread" && !it.startsWith("ru.capjack.tool.app.") }
-				?.let { it.substring(0, it.lastIndexOf('.') + 1) }
-				?: ""
-			
 			modules.forEach {
-				val name = it.qualifiedName!!.removePrefix(prefix)
-				logger.info { "Start module $name" }
+				val moduleName = it.qualifiedName!!.removePrefix(name)
+				logger.info { "Start module $moduleName" }
 				currentProducingModule.clazz = it
 				val module = injector.get(it)
 				if (module is Stoppable) {
-					moduleStoppers.addFirst(name to module)
+					moduleStoppers.addFirst(moduleName to module)
 				}
 				else if (module is MaybeStartable) {
 					val stopper = module.start()
 					if (stopper != null) {
-						moduleStoppers.addFirst(name to stopper)
+						moduleStoppers.addFirst(moduleName to stopper)
 					}
 				}
 			}
@@ -150,10 +152,20 @@ class Application(
 		var path = annotation.file
 		if (path.isEmpty()) {
 			path = type.simpleName!!
-				.replace("Config", "")
-				.decapitalize()
-				.replace(Regex("[A-Z]"), "-$0")
-				.toLowerCase()
+			if (path == "Config") {
+				path = type.qualifiedName!!
+					.removePrefix(name)
+					.removeSuffix(".Config")
+					.removeSuffix(".internal")
+					.replace('.', '-')
+			}
+			else {
+				path = path
+					.replace("Config", "")
+					.decapitalize()
+					.replace(Regex("[A-Z]"), "-$0")
+					.toLowerCase()
+			}
 			path += ".yml"
 		}
 		
