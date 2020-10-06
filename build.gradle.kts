@@ -1,6 +1,6 @@
 plugins {
-	kotlin("jvm") version "1.3.71"
-	id("nebula.release") version "14.1.1"
+	kotlin("jvm") version "1.4.10"
+	id("nebula.release") version "15.2.0"
 	id("ru.capjack.bintray") version "1.0.0"
 }
 
@@ -19,13 +19,12 @@ kotlin {
 }
 
 dependencies {
-	implementation(kotlin("stdlib-jdk8"))
 	implementation(kotlin("reflect"))
 	implementation("ch.qos.logback:logback-classic:1.2.3")
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.3")
-	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.10.3")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.11.3")
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.3")
 	
-	api("ru.capjack.tool:tool-utils:0.10.1")
-	api("ru.capjack.tool:tool-logging:1.1.0")
-	api("ru.capjack.tool:tool-depin:0.6.0")
+	api("ru.capjack.tool:tool-utils:0.15.0")
+	api("ru.capjack.tool:tool-logging:1.2.0")
+	api("ru.capjack.tool:tool-depin:0.8.0")
 }
