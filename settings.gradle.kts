@@ -1,1 +1,1 @@
-rootProject.name = "tool-jvm-app"
+rootProject.name = "tool-app"
