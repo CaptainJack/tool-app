@@ -20,6 +20,6 @@ interface ApplicationConfiguration {
 
 inline fun <reified T : Any> ApplicationConfiguration.module() = module(T::class)
 
-inline fun <reified B : Any, reified T : B> ApplicationConfiguration.moduleBind() = module(T::class, B::class)
+inline fun <reified T : B, reified B : Any> ApplicationConfiguration.moduleBind() = module(T::class, B::class)
 
 
