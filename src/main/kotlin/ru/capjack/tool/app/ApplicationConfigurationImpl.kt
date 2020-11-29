@@ -17,11 +17,6 @@ internal class ApplicationConfigurationImpl(args: Array<String>) : ApplicationCo
 		modules.add(clazz)
 	}
 	
-	override fun <T : Any> module(clazz: KClass<out T>, bind: KClass<T>) {
-		module(clazz)
-		injection { bind(bind, clazz) }
-	}
-	
 	override fun modules(vararg classes: KClass<*>) {
 		modules.addAll(classes)
 	}
