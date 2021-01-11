@@ -1,5 +1,8 @@
-package ru.capjack.tool.app
+package ru.capjack.tool.app.internal
 
+import ru.capjack.tool.app.ApplicationConfigLoader
+import ru.capjack.tool.app.ApplicationConfiguration
+import ru.capjack.tool.app.YamlApplicationConfigLoader
 import ru.capjack.tool.depin.Binder
 import kotlin.reflect.KClass
 

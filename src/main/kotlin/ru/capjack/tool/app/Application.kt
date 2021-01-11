@@ -5,6 +5,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.classic.util.ContextInitializer.CONFIG_FILE_PROPERTY
 import ch.qos.logback.core.util.OptionHelper
 import org.slf4j.LoggerFactory
+import ru.capjack.tool.app.internal.ApplicationConfigurationImpl
 import ru.capjack.tool.depin.Binder
 import ru.capjack.tool.depin.Injection
 import ru.capjack.tool.depin.addSmartProducerForAnnotatedClass
