@@ -97,14 +97,14 @@ class Application(
 				logger.info { "Start module $moduleName" }
 				currentProducingModule.clazz = it
 				val module = injector.get(it)
-				if (module is Stoppable) {
-					moduleStoppers.addFirst(moduleName to module)
-				}
-				else if (module is MaybeStartable) {
+				if (module is MaybeStartable) {
 					val stopper = module.start()
 					if (stopper != null) {
 						moduleStoppers.addFirst(moduleName to stopper)
 					}
+				}
+				else if (module is Stoppable) {
+					moduleStoppers.addFirst(moduleName to module)
 				}
 			}
 			currentProducingModule.clazz = null
