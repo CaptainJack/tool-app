@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler
 
 internal class TimeStringToSecondsIntDeserializationProblemHandler : DeserializationProblemHandler() {
-	private val regex = Regex("\\s*(?:(\\d)+d)?\\s*(?:(\\d)+h)?\\s*(?:(\\d)+m)?\\s*(?:(\\d)+s)?\\s*")
+	private val regex = Regex("\\s*(?:(\\d+)d)?\\s*(?:(\\d+)h)?\\s*(?:(\\d+)m)?\\s*(?:(\\d+)s)?\\s*")
 	
 	override fun handleWeirdStringValue(ctxt: DeserializationContext, targetType: Class<*>, valueToConvert: String, failureMsg: String): Any {
 		if (targetType == Int::class.java) {
