@@ -1,9 +1,9 @@
-package ru.capjack.tool.app.internal
+package ru.capjack.tool.app.config.handler
 
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler
 
-internal class TimeStringToSecondsIntDeserializationProblemHandler : DeserializationProblemHandler() {
+class TimeStringToSecondsIntDeserializationProblemHandler : DeserializationProblemHandler() {
 	private val regex = Regex("\\s*(?:(\\d+)d)?\\s*(?:(\\d+)h)?\\s*(?:(\\d+)m)?\\s*(?:(\\d+)s)?\\s*")
 	
 	override fun handleWeirdStringValue(ctxt: DeserializationContext, targetType: Class<*>, valueToConvert: String, failureMsg: String): Any {

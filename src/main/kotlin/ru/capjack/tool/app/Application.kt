@@ -5,7 +5,6 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.classic.util.ContextInitializer.CONFIG_FILE_PROPERTY
 import ch.qos.logback.core.util.OptionHelper
 import org.slf4j.LoggerFactory
-import ru.capjack.tool.app.internal.ApplicationConfigurationImpl
 import ru.capjack.tool.depin.Binder
 import ru.capjack.tool.depin.Injection
 import ru.capjack.tool.depin.addSmartProducerForAnnotatedClass
@@ -28,7 +27,7 @@ import kotlin.reflect.jvm.jvmErasure
 class Application(
 	private val dir: Path,
 	private val configEnv: String?,
-	private val configLoaders: List<ApplicationConfigLoader>,
+	private val configLoaders: List<ConfigLoader>,
 	modules: List<KClass<*>>,
 	injections: List<Binder.() -> Unit>
 ) : Stoppable {
@@ -58,7 +57,7 @@ class Application(
 		
 		
 		if (OptionHelper.getSystemProperty(CONFIG_FILE_PROPERTY) == null) {
-			val file = resolveConfigPath("logback.xml").toFile()
+			val file = resolveConfigFile("logback.xml")
 			if (file.exists()) {
 				JoranConfigurator().apply {
 					context = (LoggerFactory.getILoggerFactory() as LoggerContext).also(LoggerContext::reset)
@@ -139,14 +138,24 @@ class Application(
 		return dir.resolve(path)
 	}
 	
-	private fun resolveConfigPath(path: String): Path {
+	private fun resolveConfigFile(path: String): File {
 		if (configEnv != null && path.contains('.')) {
 			val envPath = "${path.substringBeforeLast('.')}.$configEnv.${path.substringAfterLast('.')}"
 			resolvePath("config/$envPath").takeIf { Files.exists(it) }?.also {
-				return it
+				return it.toFile()
 			}
 		}
-		return resolvePath("config/$path")
+		return resolvePath("config/$path").toFile()
+	}
+	
+	private fun findConfigFile(path: String): File? {
+		var file = resolveConfigFile(path)
+		if (file.exists()) return file
+		
+		file = resolveConfigFile(path.replace('-', '/'))
+		if (file.exists()) return file
+		
+		return null
 	}
 	
 	private fun provideApplicationConfig(annotation: ApplicationConfig, type: KClass<out Any>): Any {
@@ -167,16 +176,19 @@ class Application(
 					.replace(Regex("[A-Z]"), "-$0")
 					.toLowerCase()
 			}
-			path += ".yml"
 		}
 		
-		var file = resolveConfigPath(path).toFile()
-		
-		if (!file.exists()) {
-			file = resolveConfigPath(path.replace('-', '/')).toFile()
-			if (!file.exists()) {
-				throw IllegalArgumentException("ApplicationConfig file '$path' not found")
+		var file = findConfigFile(path)
+		if (file == null) {
+			for (loader in configLoaders) {
+				for (imaginePath in loader.imagine(path)) {
+					file = findConfigFile(imaginePath)
+					if (file != null) {
+						return loader.load(file, type)
+					}
+				}
 			}
+			throw IllegalArgumentException("ApplicationConfig file '$path' not found")
 		}
 		
 		val loader = configLoaders.find { it.match(file) }

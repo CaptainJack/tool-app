@@ -9,11 +9,13 @@ interface ApplicationConfiguration {
 	
 	fun module(clazz: KClass<*>)
 	
-	fun modules(vararg classes: KClass<*>)
+	fun modules(list: List<KClass<*>>)
 	
 	fun injection(configuration: Binder.() -> Unit)
 	
-	fun configLoader(loader: ApplicationConfigLoader)
+	fun configLoader(loader: ConfigLoader)
+	
+	fun configLoaders(list: List<ConfigLoader>)
 }
 
 inline fun <reified T : Any> ApplicationConfiguration.module() = module(T::class)
