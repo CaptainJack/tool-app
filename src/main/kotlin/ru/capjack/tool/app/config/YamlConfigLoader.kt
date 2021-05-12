@@ -12,7 +12,7 @@ class YamlConfigLoader : JacksonConfigLoader<YAMLMapper>(YAMLMapper()) {
 	}
 	
 	override fun match(file: File): Boolean {
-		return when (file.extension.toLowerCase()) {
+		return when (file.extension.lowercase()) {
 			"yml", "yaml" -> true
 			else          -> false
 		}

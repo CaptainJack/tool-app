@@ -172,9 +172,9 @@ class Application(
 			else {
 				path = path
 					.replace("Config", "")
-					.decapitalize()
+					.replaceFirstChar { it.lowercase(Locale.ROOT) }
 					.replace(Regex("[A-Z]"), "-$0")
-					.toLowerCase()
+					.lowercase()
 			}
 		}
 		

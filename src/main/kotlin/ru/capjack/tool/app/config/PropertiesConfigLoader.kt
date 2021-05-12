@@ -10,7 +10,7 @@ class PropertiesConfigLoader : JacksonConfigLoader<JavaPropsMapper>(JavaPropsMap
 	}
 	
 	override fun match(file: File): Boolean {
-		return file.extension.toLowerCase() == "properties"
+		return file.extension.lowercase() == "properties"
 	}
 }
 
