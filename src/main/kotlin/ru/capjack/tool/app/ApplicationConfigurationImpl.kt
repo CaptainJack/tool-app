@@ -1,8 +1,5 @@
 package ru.capjack.tool.app
 
-import ru.capjack.tool.app.config.PropertiesConfigLoader
-import ru.capjack.tool.app.config.YamlConfigLoader
-import ru.capjack.tool.app.config.handler.TimeStringToSecondsIntDeserializationProblemHandler
 import ru.capjack.tool.depin.Binder
 import kotlin.reflect.KClass
 
@@ -14,11 +11,9 @@ internal class ApplicationConfigurationImpl(args: Array<String>) : ApplicationCo
 	val injections = mutableListOf<Binder.() -> Unit>()
 	var configLoaders = mutableListOf<ConfigLoader>()
 	
-	init {
-		val configs = listOf(YamlConfigLoader(), PropertiesConfigLoader())
-		val handler = TimeStringToSecondsIntDeserializationProblemHandler()
-		configs.forEach { it.mapper.addHandler(handler) }
-		configLoaders(configs)
+	
+	override fun injection(configuration: Binder.() -> Unit) {
+		injections.add(configuration)
 	}
 	
 	override fun module(clazz: KClass<*>) {
@@ -29,8 +24,8 @@ internal class ApplicationConfigurationImpl(args: Array<String>) : ApplicationCo
 		modules.addAll(list)
 	}
 	
-	override fun injection(configuration: Binder.() -> Unit) {
-		injections.add(configuration)
+	override fun modules(vararg list: KClass<*>) {
+		modules.addAll(list)
 	}
 	
 	override fun configLoader(loader: ConfigLoader) {
@@ -38,6 +33,10 @@ internal class ApplicationConfigurationImpl(args: Array<String>) : ApplicationCo
 	}
 	
 	override fun configLoaders(list: List<ConfigLoader>) {
+		configLoaders.addAll(list)
+	}
+	
+	override fun configLoaders(vararg list: ConfigLoader) {
 		configLoaders.addAll(list)
 	}
 }

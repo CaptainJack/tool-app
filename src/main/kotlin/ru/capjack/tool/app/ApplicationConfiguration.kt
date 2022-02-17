@@ -7,15 +7,19 @@ interface ApplicationConfiguration {
 	var dir: String
 	var configEnv: String?
 	
+	fun injection(configuration: Binder.() -> Unit)
+	
 	fun module(clazz: KClass<*>)
 	
 	fun modules(list: List<KClass<*>>)
 	
-	fun injection(configuration: Binder.() -> Unit)
+	fun modules(vararg list: KClass<*>)
 	
 	fun configLoader(loader: ConfigLoader)
 	
 	fun configLoaders(list: List<ConfigLoader>)
+	
+	fun configLoaders(vararg list: ConfigLoader)
 }
 
 inline fun <reified T : Any> ApplicationConfiguration.module() = module(T::class)

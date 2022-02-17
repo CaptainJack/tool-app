@@ -4,7 +4,14 @@ import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.classic.util.ContextInitializer.CONFIG_FILE_PROPERTY
 import ch.qos.logback.core.util.OptionHelper
+import com.fasterxml.jackson.module.kotlin.addDeserializer
+import com.fasterxml.jackson.module.kotlin.kotlinModule
 import org.slf4j.LoggerFactory
+import ru.capjack.tool.app.config.DurationDeserializer
+import ru.capjack.tool.app.config.JacksonConfigLoader
+import ru.capjack.tool.app.config.PropertiesConfigLoader
+import ru.capjack.tool.app.config.TimeStringToSecondsIntDeserializationProblemHandler
+import ru.capjack.tool.app.config.YamlConfigLoader
 import ru.capjack.tool.depin.Binder
 import ru.capjack.tool.depin.Injection
 import ru.capjack.tool.depin.addSmartProducerForAnnotatedClass
@@ -17,6 +24,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
@@ -40,7 +48,27 @@ class Application(
 		configuration.injections
 	)
 	
-	constructor(args: Array<String>, configuration: ApplicationConfiguration.() -> Unit) : this(ApplicationConfigurationImpl(args).apply(configuration))
+	constructor(args: Array<String>, configuration: ApplicationConfiguration.() -> Unit) : this(
+		ApplicationConfigurationImpl(args)
+			.apply(configuration)
+			.apply {
+				
+				configLoaders(
+					YamlConfigLoader(),
+					PropertiesConfigLoader()
+				)
+				
+				val module = kotlinModule()
+				val handler = TimeStringToSecondsIntDeserializationProblemHandler()
+				
+				configLoaders.filterIsInstance<JacksonConfigLoader<*>>().forEach {
+					module.addDeserializer(Duration::class, DurationDeserializer())
+					
+					it.mapper.registerModule(module)
+					it.mapper.addHandler(handler)
+				}
+			}
+	)
 	
 	private val logger = ownLogger
 	private val running = AtomicBoolean(true)
@@ -202,10 +230,10 @@ class Application(
 		val type = parameter.type.jvmErasure
 		
 		return when {
-			type.isSubclassOf(Path::class)   -> path
+			type.isSubclassOf(Path::class) -> path
 			type.isSubclassOf(String::class) -> path.toString()
-			type.isSubclassOf(File::class)   -> path.toFile()
-			else                             -> throw IllegalArgumentException("ApplicationPath type '$type' not supported")
+			type.isSubclassOf(File::class) -> path.toFile()
+			else -> throw IllegalArgumentException("ApplicationPath type '$type' not supported")
 		}
 	}
 }
