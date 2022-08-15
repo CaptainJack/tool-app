@@ -45,8 +45,8 @@ open class SafePositiveIntHolder<R>(
 		}
 	}
 	
-	fun add(value: Int, reason: R) {
-		if (value == 0) return
+	fun add(value: Int, reason: R): Int {
+		if (value == 0) return current
 		
 		require(value > 0) { "Negative value" }
 		
@@ -75,6 +75,8 @@ open class SafePositiveIntHolder<R>(
 		if (changed) {
 			afterChange(old, new, reason)
 		}
+		
+		return new
 	}
 	
 	fun take(value: Int, reason: R): Boolean {

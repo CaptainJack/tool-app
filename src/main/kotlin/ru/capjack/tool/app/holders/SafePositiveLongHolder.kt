@@ -45,8 +45,8 @@ open class SafePositiveLongHolder<R>(
 		}
 	}
 	
-	fun add(value: Long, reason: R) {
-		if (value == 0L) return
+	fun add(value: Long, reason: R): Long {
+		if (value == 0L) return current
 		
 		require(value > 0) { "Negative value" }
 		
@@ -75,6 +75,8 @@ open class SafePositiveLongHolder<R>(
 		if (changed) {
 			afterChange(old, new, reason)
 		}
+		
+		return new
 	}
 	
 	fun take(value: Long, reason: R): Boolean {
