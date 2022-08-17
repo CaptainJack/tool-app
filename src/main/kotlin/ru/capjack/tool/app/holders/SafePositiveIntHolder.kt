@@ -1,4 +1,4 @@
-package draft.ru.capjack.tool.app.holders
+package ru.capjack.tool.app.holders
 
 @Suppress("DuplicatedCode")
 open class SafePositiveIntHolder<R>(
